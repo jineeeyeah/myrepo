@@ -41,7 +41,7 @@ I think the first question is predictive. Because the first question wants to pr
 ### Exercise 1.
 
 ```{r}
-install.packages("ggplot2")
+install.packages("ggplot2", repos = "http://cran.us.r-project.org")
 ```
 ```{r}
 library('ggplot2')
@@ -61,7 +61,7 @@ There is a linear relation between hwy and cty. The hwy values increase in conju
 Exercise 3.
 ```{r}
 library(ggplot2)
-install.packages("forcats")
+install.packages("forcats", repos = "http://cran.us.r-project.org")
 library(forcats)
 ggplot(mpg, aes(x = fct_infreq(manufacturer))) + geom_bar() + coord_flip() + labs(x = "count")
        
@@ -87,7 +87,7 @@ The lowest and highest value of cyl is having outliers.
 Exercise 5. 
 
 ```{r}
-install.packages("corrplot")
+install.packages("corrplot", repos = "http://cran.us.r-project.org")
 
 library("corrplot")
 
@@ -108,7 +108,7 @@ So we see many situations that follow these relations. Hence they make sense.
 
 ### Exercise 6
 ```{r}
-install.packages('ggthemes')
+install.packages('ggthemes', repos = "http://cran.us.r-project.org")
 library(ggthemes)
 
 library(ggplot2)
