@@ -8,22 +8,98 @@ date: '2022-04-01'
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+Exercise 1.
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+install.packages("ggplot2")
+```
+```{r}
+library('ggplot2')
 ```
 
-## Including Plots
+```{r}
+ggplot(mpg, aes(x=hwy)) + geom_histogram()
+```
+Exercise 2.
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+ggplot(mpg, aes(x= hwy, y = cty)) + geom_point() + geom_line(linetype = "dashed")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+There is a linear relation between hwy and cty. The hwy values increase in conjunction with cty values. As both of these are miles per gallon (MPG) values, this relationship means that for the vehicles in this dataset, if the mpg value is high within city, then it is also relatively high on the highway and vice versa.
+
+Exercise 3.
+```{r}
+library(ggplot2)
+install.packages("forcats")
+library(forcats)
+ggplot(mpg, aes(x = fct_infreq(manufacturer))) + geom_bar() + coord_flip() + labs(x = "count")
+       
+```
+
+Exercise 4.
+```{r}
+
+cyl2 <- as.character(mpg$cyl)
+ggplot(mpg, aes(x = cyl2, y = hwy)) + geom_boxplot()
+
+ggplot(mpg, aes(group = cyl, y = hwy)) + geom_boxplot()
+
+```
+From the above output, the following are interpreted,
+
+If the value of cyl is high, hwy value is decreased.
+If the value of cyl is low, hwy value is increased.
+The lowest and highest value of cyl is having outliers.
+
+
+
+Exercise 5. 
+
+```{r}
+install.packages("corrplot")
+
+library("corrplot")
+
+M = cor(mpg %>% dplyr::select(where(is.numeric)))
+corrplot(M,method ="number", type="lower")
+
+```
+
+
+Variables that move in same direction i.e. in tandem will have positive correlation that means one variable increases if another variable increases and vice versa, and the variables that move in opposite direction will have negative correlation that means here the value of a variable decreases if another variable increases and vice versa
+
+. A positive correlation is observed in many situations for example we can see a correlation between the demand for a product and the product's associated price. In situations where the available supply stays the same, the price will rise if demand increases, this is example of positive correlation
+
+Examples for negative correlation is if the availability of the product is high then there may be chance to get price reduced
+
+So we see many situations that follow these relations. Hence they make sense.
+
+
+### Exercise 6
+```{r}
+install.packages('ggthemes')
+library(ggthemes)
+
+ggplot(mpg, aes(x = hwy, y = class)) + 
+        geom_boxplot() +
+        labs(x = 'Highway MPG', y = 'Vehicle Class') +
+        theme_economist_white(gray_bg = FALSE) +
+        geom_jitter(color = "grey", size = 0.7, alpha = 1) + theme(panel.grid.major.x = element_line(colour = 'grey'))
+```
+
+### Exercise 7
+
+```{r}
+
+ggplot(mpg, aes(x = class, y = hwy, fill = drv)) + geom_boxplot()
+
+```
+
+
+
+### Exercise 8
+```{r}
+ggplot(mpg, aes(x = displ, y = hwy, color = drv)) + geom_point() + geom_smooth(aes(linetype = drv), color = 'blue', se = FALSE)
+```
+
