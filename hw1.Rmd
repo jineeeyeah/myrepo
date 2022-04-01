@@ -8,7 +8,37 @@ date: '2022-04-01'
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-Exercise 1.
+### Question 1.
+
+Supervised learning is learning with supervisor(the actual data Y), and unsupervised learning is leaning without supervisor. In unsupervised learning, we can't see the answer key. The examples of supervised learning is linear regression, logistic regression, and random forests. The examples of unsupervised learning is principal component analysis(PCA), k-means clustering, and hierarchical clustering.
+
+### Question 2.
+Classification is the task of predicting a discrete class label, that Y is quantitative values(numerical values). Regression is the task of predicting a continuous quantity, that Y is qualitative values(categorical values).
+
+
+### Question 3.
+Two commonly used metrics for regression ML problems are MSE(Mean Squared Error), and MAE(Mean Absolute Error). Two commonly used metrics for classification ML problems are Error Rate, 
+
+
+### Question 4.
+Descriptive models are choosing model to best visually emphasize a trend in data. Predictive models are choosing model to predict Y with minimum reducible error, not focused on hypothesis tests. Inferential models' aim is to test theories, state relationship between outcome and predictors. 
+
+### Question 5.
+Mechanistic model is a model which assumes a parametric form for f, and won't match true unknown f. It can add parameters, which increases the flexibility. Empirically-driven model is a model which has no assumptions about f, and it requires a larger number of observations. They are similar because both model can have an overfitting problem. 
+
+I think a mechanistic model is easier to understand in general, because parameters usually help us to understand the model easier.
+
+The bias-variance tradeoff is the property of a model that the variance of the parameter can be reduced by increasing the bias in the parameters, and the high variance may result from overfitting problem. So, the bias-variance trade off is related to the use of mechanistic models and the empirically-driven models because both models can have an overfitting problem.
+
+
+### Question 6.
+I think the first question is predictive. Because the first question wants to predict how likely it is that they will vote in favor of the candidate in given situation. I think the secound question is inferential. Because the second question wants to state the relationship between outcome(How would a voter's likelihood of support for the candidate change) and predictors(the personal contact with the candidate).
+
+
+
+
+
+### Exercise 1.
 
 ```{r}
 install.packages("ggplot2")
@@ -81,11 +111,16 @@ So we see many situations that follow these relations. Hence they make sense.
 install.packages('ggthemes')
 library(ggthemes)
 
+library(ggplot2)
+
 ggplot(mpg, aes(x = hwy, y = class)) + 
         geom_boxplot() +
         labs(x = 'Highway MPG', y = 'Vehicle Class') +
         theme_economist_white(gray_bg = FALSE) +
         geom_jitter(color = "grey", size = 0.7, alpha = 1) + theme(panel.grid.major.x = element_line(colour = 'grey'))
+
+ggplot(mpg, aes(x = hwy, y = class)) + geom_jitter(color = 'grey', size = 0.7, alpha = 1) + geom_boxplot() + labs(x = 'Highway MPG', y = 'Veichle Class') + theme(panel.grid.major = element_line(colour = 'grey')) + theme(panel.background = element_rect(fill = "white", colour = "grey50")) + theme(panel.border = element_rect(colour = 'white', fill = NA)) + theme(axis.ticks = element_blank()) + theme(axis.line.x = element_line(size = 1, colour = "black"))
+
 ```
 
 ### Exercise 7
