@@ -50,15 +50,25 @@ library('ggplot2')
 ```{r}
 ggplot(mpg, aes(x=hwy)) + geom_histogram()
 ```
-Exercise 2.
+Hwy become x values, and the counts of Hwy become y values naturally. According to the histogram of Hwy, we can see that there are some outliers, and the mode seems like to be about 26.
+
+```{r}
+mpg$hwy
+mean(mpg$hwy)
+
+```
+
+
+### Exercise 2.
+
 
 ```{r}
 ggplot(mpg, aes(x= hwy, y = cty)) + geom_point() + geom_line(linetype = "dashed")
 ```
 
-There is a linear relation between hwy and cty. The hwy values increase in conjunction with cty values. As both of these are miles per gallon (MPG) values, this relationship means that for the vehicles in this dataset, if the mpg value is high within city, then it is also relatively high on the highway and vice versa.
+There is a linear relation between hwy and cty. The hwy values increase in conjunction with cty values. The linear relation means that for the vehicles in this data, if the mpg value is high within city, then the mpg value is also high on the highway, relatively. And if the mpg value is also high on the highway, then the mpg value is also high within city, relatively.
 
-Exercise 3.
+### Exercise 3.
 ```{r}
 library(ggplot2)
 install.packages("forcats", repos = "http://cran.us.r-project.org")
@@ -66,8 +76,9 @@ library(forcats)
 ggplot(mpg, aes(x = fct_infreq(manufacturer))) + geom_bar() + coord_flip() + labs(x = "count")
        
 ```
+Dodge produced the most cars, and Lincoln produced the least cars.
 
-Exercise 4.
+### Exercise 4.
 ```{r}
 
 cyl2 <- as.character(mpg$cyl)
@@ -76,34 +87,29 @@ ggplot(mpg, aes(x = cyl2, y = hwy)) + geom_boxplot()
 ggplot(mpg, aes(group = cyl, y = hwy)) + geom_boxplot()
 
 ```
-From the above output, the following are interpreted,
-
-If the value of cyl is high, hwy value is decreased.
-If the value of cyl is low, hwy value is increased.
-The lowest and highest value of cyl is having outliers.
+If the value of cyl is low, hwy value is increased, and if the value of cyl is high, hwy value is decreased.
+There is some outliers in the lowest and the highest value of cyl.
 
 
 
-Exercise 5. 
+### Exercise 5. 
 
 ```{r}
 install.packages("corrplot", repos = "http://cran.us.r-project.org")
 
-library("corrplot")
+library(corrplot)
+library(tidyverse)
 
 M = cor(mpg %>% dplyr::select(where(is.numeric)))
 corrplot(M,method ="number", type="lower")
 
+mpg
+
 ```
 
 
-Variables that move in same direction i.e. in tandem will have positive correlation that means one variable increases if another variable increases and vice versa, and the variables that move in opposite direction will have negative correlation that means here the value of a variable decreases if another variable increases and vice versa
-
-. A positive correlation is observed in many situations for example we can see a correlation between the demand for a product and the product's associated price. In situations where the available supply stays the same, the price will rise if demand increases, this is example of positive correlation
-
-Examples for negative correlation is if the availability of the product is high then there may be chance to get price reduced
-
-So we see many situations that follow these relations. Hence they make sense.
+ 'displ' variable is positively correlated with 'cyl', 'cty' variable is positively correlated with 'hwy'. These relationships make sense to me, because as the number of cylinders increases the enigne displacement usually increases, and vice versa. Also, as the city miles per gallon increases the highway miles per gallon usually increases, and vice versa.  
+ 'cty' variable is negatively correlated with 'displ' and 'cyl'. 'hwy' variable is negatively correlated with 'displ' and 'cyl'. These relationships also make sense to me, because as the engine displacement and the number of cylinders increases, the city, highway miles per gallon usually decreases, and vice versa.
 
 
 ### Exercise 6
