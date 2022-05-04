@@ -122,17 +122,16 @@ qda_res = qda_wkflow %>%
 
 ## Question 6
 ```{r}
-### collect_metrics(log_res)
+### collect_metrics(log_res) 
+### I wrote the code like this because we can't run the code because of the Question 5's 'eval=FALSE' code. 
 ```
 ```{r}
-library(klaR)
-library(ISLR)
-library(ISLR2)
-library(poissonreg)
 ### collect_metrics(lda_res)
+### I wrote the code like this because we can't run the code because of the Question 5's 'eval=FALSE' code. 
 ```
 ```{r}
 ### collect_metrics(qda_res)
+### I wrote the code like this because we can't run the code because of the Question 5's 'eval=FALSE' code. 
 ```
    The logistic model performed the best. The mean accuracy is 0.80 and standard error is 0.01. Because the accuracy of logistic model is the highest one, and the standard error of logistic model is the smallest one. So, it has perfomed the best. 
 
