@@ -1,0 +1,571 @@
+---
+title: "final project__"
+output: html_document
+date: '2022-06-05'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Introduction
+
+
+##### The purpose of this project is to generate several machine learning models that will predict which passengers would survive the Titanic shipwreck, and choose the best model. We are going to run Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model. 
+
+##### This project uses on a data of the Kaggle 'Titanic - Machine Learning from Disaster'('https://www.kaggle.com/competitions/titanic/data'), the data of Titanic's passengers,name, age, gender, socio-economic class, etc. 
+
+##### These are variables of this project's data.
+##### 1. passenger_id: id of passenger
+##### 2. survived: ''Yes' means the passenger survived, 'No' means the passenger didn't survive.
+##### 3. pclass: ticket class, '1' means 1st class, '2' means 2nd class, '3' means 3rd class.
+##### 4. name: name of passenger, passenger title, surname of passenger
+##### 5. sex: sex of the passenger
+##### 6. age: age of the passenger
+##### 7. sib_sp: number of siblings or spouses aboard the Titanic
+##### 8. parch: number of parents or children aboard the Titanic
+##### 9. ticket: ticket number
+##### 10. fair: passenger fare
+##### 11. cabin: cabin number
+##### 12. embarked: 'C'means 'Cherbourg', 'Q' means 'Queenstown', 'S' means 'Southampton'
+
+
+# Loading Data and Packages
+
+
+```{r}
+# Load data
+titanic <- read.csv("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic.csv")
+```
+
+```{r}
+# Load packages
+library(klaR)
+library(tidyverse)
+library(tidymodels)
+library(corrplot)
+library(corrr)
+library(discrim)
+library(ISLR)
+library(vip)
+library(janitor)
+library(glmnet)
+library(ggplot2)
+library(ggthemes)
+library(dplyr)
+library(rpart.plot)
+library(kknn)
+tidymodels_prefer()
+
+# set seed
+set.seed(1234)
+
+```
+
+# Data Cleaning
+
+ To run several machine learning models, 'survived' and 'pclass' should be changed to factors. Let's reorder 'survived' to make "Yes' first level.
+
+```{r}
+titanic <- titanic %>%
+  mutate(survived = factor(survived, levels = c("Yes", "No")),
+         pclass = factor(pclass))
+```
+
+Let's clean names.
+
+```{r}
+titanic <- titanic %>%
+  clean_names()
+```
+
+
+# Data Splitting & Cross-Validation
+
+ Before EDA, Let's split the data into a training set, and a testing set by 0.7 proportion. We are going to stratify on the outcome variable, "survived" for this project.
+
+```{r}
+set.seed(1234)
+data_split <- initial_split(titanic, strata = survived, prop = 0.7)
+
+data_train <- training(data_split)
+data_test <- testing(data_split)
+
+dim(data_train)
+dim(data_test)
+```
+ The training data set has about 620 observations and the testing data has about 270 observations. 
+
+
+##### Let's fold the training set using *v*-fold cross-validation, with `v = 10`, and stratify on the outcome variable "survived".
+
+```{r}
+titanic_folds <- vfold_cv(data_train, v = 10, strata = survived)
+```
+
+
+# Exploratory Data Analysis(EDA)
+
+
+##### This entire exploratory data analysis will be based only on the training set, which has 623 observations. 
+
+## Explores outcome variable distribution
+
+##### Let's explore outcome variable 'survived' distribution.
+```{r}
+data_train %>%
+  ggplot(aes(x = survived)) +
+  geom_bar() +
+  labs(
+    title = "the outcome variable 'survived' distribution"
+  )
+```
+##### There is a level imbalance in the outcome variable, because there are more observations for one level 'No', than the other, 'Yes'. Therefore, it is worthwhile and required to stratify in the cross-validation. 
+
+## Assess missing data patterns
+
+```{r}
+summary(titanic)
+```
+
+##### We can know that the only variable with missingness is 'age', which has missing 177 values. So, we have to manipulate these missing values to explore relationships among other variables, and add an imputation step when we make a recipe later.
+
+
+## Explore realtionships among variables.
+
+##### 1. Using the training data set, let's create a correlation matrix of all continuous variables and visualize it.
+
+```{r}
+data_train %>%
+  select(where(is.numeric), -passenger_id) %>%
+  cor(use = "complete.obs") %>%
+  corrplot(type = "lower", diag = FALSE)
+```
+
+##### 'age' and 'sib_sp' are negatively correlated, which implies that older passengers are less likely to have sibling on board. 'age' and 'parch' are also negatively correlated, which implies that older passengers are less likely to have parents or children on board. 'parch' and 'sib_sp' are positively correltated, which implies that having one on board means having the other on board is also likely.
+
+
+##### 2. Using positively correlated relationship between 'parch' and 'sib_sp', let's make a 'family size' variable based on 'parch' (number of siblings or spouses) and 'sib_sp' (number of children or parents).
+
+```{r}
+# Create a family size variable including the passenger themselves
+data_train2 <- data_train
+data_train2$fsize <- data_train2$sib_sp + data_train2$parch + 1
+```
+
+##### Let's visualize the relationship between new variable 'family size' and 'survived'.
+
+```{r}
+ggplot(data_train2[1:623,], aes(x = fsize, fill = factor(survived))) +
+  geom_bar(stat='count', position='dodge') +
+  scale_x_continuous(breaks=c(1:11)) +
+  labs(x = 'family size') +
+  theme_few() +
+  labs(
+    title = "the relationship between new variable 'family size' and 'survived'"
+  )
+```
+
+##### By this ggplot, we can see that those with no family and those with family sizes above 4 tended to be less likely to survive. Let's divide 'family size' variable into three levels, then make 'family type' variable. 
+
+```{r}
+# divide 'family size' variable into three levels, then make 'family type' variable. 
+data_train2$ftype[data_train2$fsize == 1] <- 'single'
+data_train2$ftype[data_train2$fsize > 1 & data_train2$fsize < 5] <- 'small'
+data_train2$ftype[data_train2$fsize > 4] <- 'large'
+```
+
+```{r}
+# make a ggplot of the 'survived' distribution by family type.
+ggplot(data_train2, aes(survived)) +
+  geom_bar(color = "white") +
+  facet_wrap(~ftype, scales = "free_y") + 
+  labs(
+    title = "the 'survived' distribution by family type"
+  )
+```
+
+##### Now we can truly see that the single family type and the big family type tended to be less likely to survive than the small family type. 
+
+##### Therefore, we can make sure that 'sib_sp', 'parch' are factors that we should be considering in this project. 
+
+
+##### 3. Let's explore the realtionship between age, sex, and survived.
+
+```{r}
+ggplot(data_train[1:623,], aes(x = age, fill = factor(survived))) + 
+  geom_histogram(bins = 30) + 
+  facet_grid(.~sex) + 
+  theme_few() +
+  labs(
+    title = "The relationship between 'age', 'sex', and 'survived'"
+  )
+```
+##### By this plot, we can see that men were less likey to survive than women. Those men between the ages of 20-30 tended to be less likely to survive than women of the same age. 
+
+##### Therefore, we can make sure that 'age', 'sex' are important factors that we should be considering in this project. 
+
+
+
+##### 4. Let's explore the realtionship between pclass, fare, and survived.
+
+```{r}
+ggplot(data_train[1:623,], aes(x = fare, fill = factor(survived))) + 
+  geom_histogram(binwidth = 100) + 
+  facet_grid(.~pclass) + 
+  theme_few() +
+  labs(
+    title = "The relationship between 'pclass', 'fare', and 'survived'"
+  )
+```
+
+##### By this plot, we can see that pclass '1' were most likey to survive, and plcass '3' were least likely to survive. The mean fare of pclass '1' much higher than the mean fare of pclass '3'.  
+
+```{r}
+mosaicplot(table(data_train$pclass, data_train$survived), main='The survival distribution by pclass', shade=TRUE)
+```
+
+##### By this mosaic plot, we can know that the pclass higher, the less tendency to survive. 
+
+##### Therefore, we can make sure that 'pclass', 'fare' are important factors that we should be considering in this project to predict which passengers would survive the Titanic shipwreck.
+
+
+# Model Building
+
+
+## 1. Building the Recipe 
+
+##### Let's build the recipe.
+
+```{r}
+control <- control_resamples(save_pred = TRUE)
+
+# Build the Recipe
+titanic_recipe <- recipe(survived ~ pclass + sex + age + sib_sp + parch + fare, data = data_train) %>%
+  step_impute_linear(age, impute_with = imp_vars(sib_sp)) %>%
+  step_dummy(all_nominal_predictors()) %>%
+  step_interact(~ starts_with("sex"):fare + age:fare) %>%
+  step_normalize(all_predictors())
+
+# step_impute_linear: 'age' have several missing values, so I added an imputation step, I chose 'sib_sp' to impute with 'age' because those are correlated. 
+
+# step_dummy: There are several categorical predictors, so I used 'step_dummy' function to dummy encode those categorical predictors.
+
+```
+
+##### In an effort to have the same information in every model R script, I saved model objects to my folder.
+
+```{r}
+getwd()
+```
+
+```{r}
+write_rds(data_train, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/train_modelready.rds")
+write_rds(data_test, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/test_modelready.rds" )
+```
+
+```{r}
+save(titanic_folds,titanic_recipe, data_train, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/model_setup.rda" )
+```
+
+##### This included the training data folds, the recipe, and the original training data.
+
+
+
+## 2. Running the Models for Repeated Cross Fold Validation
+
+##### I decided to run repeated cross fold validation on the following four models, Decision Model, Random Forest Model, Boosted Tree Model, Nearest Neighbor Model, because my outcome variable is a categorical variable.
+
+##### Before running the models, I loaded the required objects that I saved.
+
+```{r}
+load(file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/model_setup.rda" )
+```
+
+
+## Decision model
+
+
+```{r}
+# Set up a decision tree model.
+tree_model <- decision_tree() %>%
+  set_engine("rpart") %>%
+  set_mode("classification")
+
+
+# Set up a decision tree workflow.
+tree_wf <- workflow() %>%
+  add_model(tree_model %>% set_args(cost_complexity = tune())) %>%
+  add_recipe(titanic_recipe)
+
+# Create the regular grid to tune the 'cost_complexity' hyperparameter.
+set.seed(1234)
+
+tree_grid <- grid_regular(cost_complexity(range = c(-3, -1)), levels = 10)
+tree_grid
+```
+
+
+```{r}
+# Tune the 'cost_complexity' hyperparameter.
+tree_tune <- tune_grid(
+  tree_wf,
+  resamples = titanic_folds,
+  grid = tree_grid,
+  metrics = metric_set(roc_auc)
+)
+```
+
+```{r}
+# Save the results of decision model.
+save(tree_tune, tree_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/tree_tune.rda")
+```
+
+
+
+## Random Forest Model 
+
+
+```{r}
+# Set up a random forest model. I used the `ranger` engine and set `importance = "impurity" to know variable importance. I tuned `mtry`, `trees`, and `min_n` to find the best random forest model. 
+rf_model <- rand_forest(mtry = tune(), trees = tune(), min_n = tune()) %>%
+  set_engine("ranger", importance = "impurity") %>%
+  set_mode("classification")
+
+# Set up a random forest workflow.
+rf_wf <- workflow() %>%
+  add_model(rf_model) %>%
+  add_recipe(titanic_recipe)
+```
+
+```{r}
+# Create the regular grid to tune the 'mtry', 'trees', 'min_n' hyperparameters. Because 'mtry' hyperparameter is the number of randomly selected predictors, 'mtry' should not be smaller than 1 or larger than 6 (We have only 6 predictors)
+set.seed(1234)
+rf_grid <- grid_regular(mtry(range = c(1, 6)), trees(range = c(10,100)) , min_n(range = c(10,100)), levels = 8)
+rf_grid
+```
+
+```{r}
+# Tune the hyperparameters.
+rf_tune <- tune_grid(
+  rf_wf,
+  resamples = titanic_folds,
+  grid = rf_grid,
+  metrics = metric_set(roc_auc)
+)
+```
+
+```{r}
+# Save the results of random forest model.
+save(rf_tune, rf_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/rf_tune.rda")
+```
+
+
+
+## Boosted tree model
+
+
+```{r}
+# Set up a boosted tree model. I used the `xgboost` engine and tuned `mtry`, `trees`, and `min_n` to find the best boosted tree model. 
+bt_model <- boost_tree(mtry = tune(), trees = tune(), min_n = tune()) %>%
+  set_engine("xgboost") %>%
+  set_mode("classification")
+
+# Set up a boosted tree workflow.
+bt_wf <- workflow() %>%
+  add_model(bt_model) %>%
+  add_recipe(titanic_recipe)
+
+```
+```{r}
+# Create the regular grid to tune the 'mtry', 'trees', 'min_n' hyperparameters.
+set.seed(1234)
+bt_grid <- grid_regular(mtry(range = c(1, 6)), trees(range = c(10,100)) , min_n(range = c(10,100)), levels = 8)
+```
+```{r}
+# Tune the hyperparemeters.
+bt_tune <- tune_grid(
+  bt_wf,
+  resamples = titanic_folds,
+  grid =bt_grid,
+  metrics = metric_set(roc_auc))
+```
+```{r}
+# Save the results of boosted tree model.
+save(bt_tune, bt_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/bt_tune.rda")
+```
+
+
+## Nearest Neighbors Model
+
+
+```{r}
+# Set up a nearest neighbors model.
+knn_model <- 
+  nearest_neighbor(
+    neighbors = tune(),
+    mode = "classification") %>%
+  set_engine("kknn")
+
+# Set up a nearest neighbors workflow.
+knn_wf <- workflow() %>%
+  add_model(knn_model) %>%
+  add_recipe(titanic_recipe)
+```
+```{r}
+# Create a regular grid.
+set.seed(1234)
+knn_params <- extract_parameter_set_dials(knn_model)
+knn_grid <- grid_regular(knn_params, levels = 2)
+```
+
+```{r}
+# Tune the hyperparameters.
+knn_tune <- knn_wf %>%
+  tune_grid(
+    resamples = titanic_folds,
+    grid = knn_grid)
+```
+```{r}
+# Save the results of nearest neighbors model.
+save(knn_tune, knn_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/knn_tune.rda")
+```
+
+
+# Repeated Cross Validation Model Analysis
+
+```{r}
+load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/tree_tune.rda")
+load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/rf_tune.rda")
+load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/bt_tune.rda")
+load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/knn_tune.rda")
+```
+
+
+## Decision Tree Model
+
+```{r}
+autoplot(tree_tune)
+```
+```{r}
+show_best(tree_tune)
+```
+
+##### The 'roc_auc' of my best-performing pruned decision tree on the folds is '0.8436833'.
+
+
+## Random Forest Model
+
+```{r}
+autoplot(rf_tune)
+```
+```{r}
+show_best(rf_tune)
+```
+
+##### The 'roc_auc' of my best-performing random forest on the folds is '0.8621675', with mtry=1, trees = 74, min_n = 10. This is good performing model. 
+
+
+## Boosted Tree Model
+
+```{r}
+autoplot(bt_tune)
+```
+```{r}
+show_best(bt_tune)
+```
+
+##### The 'roc_auc' of my best-performing boosted tree on the folds is '0.8520170', with mtry=2, trees = 87, min_n = 10. This is also quite good performing model. 
+
+
+## Nearest Neighbor Model
+
+```{r}
+autoplot(knn_tune)
+```
+```{r}
+show_best(knn_tune)
+```
+
+##### The 'roc_auc' of my best-performing nearest neighbor on the folds is '0.8572762', with neighbors=15. This is also quite good performing model. 
+
+
+### Let's continue with the Random Forest Model being the model that performed best.
+
+
+
+# Final Model Building
+
+```{r}
+# Finalize the workflow by taking the parameters from the best model(the random forest model).
+rf_final <- rf_wf %>%
+  finalize_workflow(select_best(rf_tune, metric = "roc_auc"))
+
+```
+
+```{r}
+# Load the entire training set, which we saved as a "ready to go" data set in an earlier script.
+train <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/train_modelready.rds")
+```
+
+```{r}
+# Let's run the fit and write out the results.
+rf_results <- fit(rf_final, train)
+write_rds(rf_results, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelfitting.rds" )
+```
+
+
+# Model Fitting and Evaluating performances
+
+```{r}
+# Let's load testing data set and our final model.
+test <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelready.rds")
+final_model <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelfitting.rds")
+```
+
+```{r}
+titanic_metric <- metric_set(roc_auc)
+# Let's fit the model to the testing data set. 
+model_test_predictions <- predict(final_model, new_data = test, type = "class") %>%
+  bind_cols(test %>% select(survived)) %>%
+  accuracy(truth = survived, estimate = .pred_class)
+
+model_test_predictions
+```
+
+##### Our model returned an roc_auc of 0.8571429 on our testing data, similar roc_auc(0.8621675) on our training data. This means my model did such a great job, not overfitting to the training data. 
+
+
+##### Using the testing data, let's creat a confusion matrix and visualize it. 
+
+```{r}
+augment(final_model, new_data = test) %>% 
+  conf_mat(truth = survived, estimate = .pred_class) %>%
+  autoplot(type = "heatmap")
+```
+
+##### In the heat map, we know that correct classifications are always on the diagonal. The model correctly identified 157/239 'Yes'. for example. From the heat map, we can see that the model seems to distinguish 'survived' well. The model correctly identified 157/239 'Yes', and 377/384. The model is great at identifying 'Yes'.
+
+
+
+##### Let's print the roc curve.
+
+```{r}
+augment(final_model, new_data = test) %>% 
+  roc_curve(survived, .pred_Yes ) %>%
+  autoplot()
+```
+
+##### Based on the ROC curve, the model actually did well. Because the curve is attached to the left-up side.
+
+
+# Conclusion
+
+
+###### This project's goal was to generate several machine learning models that will predict which passengers would survive the Titanic shipwreck, and choose the best model. So we run Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model. 
+#####  By EDA, we could know that 'pclass', 'sex', 'age', 'sib_sp', 'parch', 'fare' variables are important to predict the outcome variable 'survived'. So, we made a recipe for predicting 'survived' using 'pclass','sex','age','sib_sp','parch','fare' variables.
+#####  After run several models, we compared the 'roc_auc' of each best-performing model on the folds of Decision, Random Forest, Boosted Tree, and Nearest Neighbor model. After comparing various models, we ultimately decided to go with a random forest model. The 'roc_auc' of our best-performing random forest on the folds was '0.8621675', with mtry=1, trees = 74, min_n = 10. This was the best performing model on the folds. The worst performing model was Decision Tree model in this project. The 'roc_auc' of our be st-performing pruned decision tree on the folds was '0.8436833'.
+#####  I expected the random forest model would be the best model in this project, because each trees were able to protect themselves from making correlations between variables that were not actually correlated. The result was as I expected. I expected the decision model would be the poorest performing model in this project, because the more complex the decision tree model becomes, the less predictive it becomes.
+#####  Finally, we fitted the best performing model to the testing data set. Our model returned an roc_auc of 0.8571429 on our testing data, similar roc_auc(0.8621675) on our training data. The model did such a great job.
+#####  Further research avenues may be creating a neural network model that will predict which passengers would survive the Titanic shipwreck, because we only created Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model.
