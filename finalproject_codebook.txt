@@ -1,0 +1,11 @@
+passenger_id: id of passenger
+survived: ‘’Yes’ means the passenger survived, ‘No’ means the passenger didn’t survive.
+pclass: ticket class, ‘1’ for 1st class, ‘2’ for 2nd class, ‘3’ for 3rd class.
+name: name of passenger, passenger title, surname of passenger
+sex: sex of the passenger
+age: age of the passengersib_sp: number of siblings or spouses aboard the Titanic
+parch: number of parents or children aboard the Titanic
+ticket: ticket number
+fair: passenger fare
+cabin: cabin number
+embarked: ‘C’ for ’Cherbourg’, ‘Q’ for ‘Queenstown’, ‘S’ for ‘Southampton’

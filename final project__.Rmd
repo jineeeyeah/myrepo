@@ -261,12 +261,12 @@ getwd()
 ```
 
 ```{r}
-write_rds(data_train, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/train_modelready.rds")
-write_rds(data_test, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/test_modelready.rds" )
+write_rds(data_train, "C:/Users/82107/Documents/myrepo/finalproject/rds/train_modelready.rds")
+write_rds(data_test, "C:/Users/82107/Documents/myrepo/finalproject/rds/test_modelready.rds" )
 ```
 
 ```{r}
-save(titanic_folds,titanic_recipe, data_train, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/model_setup.rda" )
+save(titanic_folds,titanic_recipe, data_train, file = "C:/Users/82107/Documents/myrepo/finalproject/rda/model_setup.rda" )
 ```
 
 ##### This included the training data folds, the recipe, and the original training data.
@@ -280,7 +280,7 @@ save(titanic_folds,titanic_recipe, data_train, file = "C:/Users/82107/Desktop/PS
 ##### Before running the models, I loaded the required objects that I saved.
 
 ```{r}
-load(file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/model_setup.rda" )
+load(file =  "C:/Users/82107/Documents/myrepo/finalproject/rda/model_setup.rda")
 ```
 
 
@@ -319,7 +319,7 @@ tree_tune <- tune_grid(
 
 ```{r}
 # Save the results of decision model.
-save(tree_tune, tree_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/tree_tune.rda")
+save(tree_tune, tree_wf, file = "C:/Users/82107/Documents/myrepo/finalproject/rda/tree_tune.rda")
 ```
 
 
@@ -342,7 +342,7 @@ rf_wf <- workflow() %>%
 ```{r}
 # Create the regular grid to tune the 'mtry', 'trees', 'min_n' hyperparameters. Because 'mtry' hyperparameter is the number of randomly selected predictors, 'mtry' should not be smaller than 1 or larger than 6 (We have only 6 predictors)
 set.seed(1234)
-rf_grid <- grid_regular(mtry(range = c(1, 6)), trees(range = c(10,100)) , min_n(range = c(10,100)), levels = 8)
+rf_grid <- grid_regular(mtry(range = c(1, 6)), trees(range = c(10,100)) , min_n(range = c(10,100)), levels = 10)
 rf_grid
 ```
 
@@ -358,7 +358,7 @@ rf_tune <- tune_grid(
 
 ```{r}
 # Save the results of random forest model.
-save(rf_tune, rf_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/rf_tune.rda")
+save(rf_tune, rf_wf, file = "C:/Users/82107/Documents/myrepo/finalproject/rda/rf_tune.rda")
 ```
 
 
@@ -393,7 +393,7 @@ bt_tune <- tune_grid(
 ```
 ```{r}
 # Save the results of boosted tree model.
-save(bt_tune, bt_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/bt_tune.rda")
+save(bt_tune, bt_wf, file = "C:/Users/82107/Documents/myrepo/finalproject/rda/bt_tune.rda")
 ```
 
 
@@ -429,17 +429,17 @@ knn_tune <- knn_wf %>%
 ```
 ```{r}
 # Save the results of nearest neighbors model.
-save(knn_tune, knn_wf, file = "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/knn_tune.rda")
+save(knn_tune, knn_wf, file = "C:/Users/82107/Documents/myrepo/finalproject/rda/knn_tune.rda")
 ```
 
 
 # Repeated Cross Validation Model Analysis
 
 ```{r}
-load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/tree_tune.rda")
-load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/rf_tune.rda")
-load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/bt_tune.rda")
-load("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/knn_tune.rda")
+load("C:/Users/82107/Documents/myrepo/finalproject/rda/tree_tune.rda")
+load("C:/Users/82107/Documents/myrepo/finalproject/rda/rf_tune.rda")
+load("C:/Users/82107/Documents/myrepo/finalproject/rda/bt_tune.rda")
+load("C:/Users/82107/Documents/myrepo/finalproject/rda/knn_tune.rda")
 ```
 
 
@@ -452,7 +452,7 @@ autoplot(tree_tune)
 show_best(tree_tune)
 ```
 
-##### The 'roc_auc' of my best-performing pruned decision tree on the folds is '0.8436833'.
+##### The 'roc_auc' of my best-performing pruned decision tree on the folds is '0.8294943'.
 
 
 ## Random Forest Model
@@ -464,7 +464,7 @@ autoplot(rf_tune)
 show_best(rf_tune)
 ```
 
-##### The 'roc_auc' of my best-performing random forest on the folds is '0.8621675', with mtry=1, trees = 74, min_n = 10. This is good performing model. 
+##### The 'roc_auc' of my best-performing random forest on the folds is '0.8625725', with mtry=1, trees = 100, min_n = 10. This is good performing model. 
 
 
 ## Boosted Tree Model
@@ -476,7 +476,7 @@ autoplot(bt_tune)
 show_best(bt_tune)
 ```
 
-##### The 'roc_auc' of my best-performing boosted tree on the folds is '0.8520170', with mtry=2, trees = 87, min_n = 10. This is also quite good performing model. 
+##### The 'roc_auc' of my best-performing boosted tree on the folds is '0.8521397', with mtry=4, trees = 100, min_n = 10. This is also quite good performing model. 
 
 
 ## Nearest Neighbor Model
@@ -488,7 +488,7 @@ autoplot(knn_tune)
 show_best(knn_tune)
 ```
 
-##### The 'roc_auc' of my best-performing nearest neighbor on the folds is '0.8572762', with neighbors=15. This is also quite good performing model. 
+##### The 'roc_auc' of my best-performing nearest neighbor on the folds is '0.8608220', with neighbors=15. This is also quite good performing model. 
 
 
 ### Let's continue with the Random Forest Model being the model that performed best.
@@ -506,13 +506,13 @@ rf_final <- rf_wf %>%
 
 ```{r}
 # Load the entire training set, which we saved as a "ready to go" data set in an earlier script.
-train <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/train_modelready.rds")
+train <- read_rds("C:/Users/82107/Documents/myrepo/finalproject/rds/train_modelready.rds")
 ```
 
 ```{r}
 # Let's run the fit and write out the results.
 rf_results <- fit(rf_final, train)
-write_rds(rf_results, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelfitting.rds" )
+write_rds(rf_results, "C:/Users/82107/Documents/myrepo/finalproject/rds/titanic_modelfitting.rds" )
 ```
 
 
@@ -520,8 +520,8 @@ write_rds(rf_results, "C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titani
 
 ```{r}
 # Let's load testing data set and our final model.
-test <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelready.rds")
-final_model <- read_rds("C:/Users/82107/Desktop/PSTAT 131,231/FINAL PROJECT/titanic_modelfitting.rds")
+test <- read_rds("C:/Users/82107/Documents/myrepo/finalproject/rds/test_modelready.rds")
+final_model <- read_rds("C:/Users/82107/Documents/myrepo/finalproject/rds/titanic_modelfitting.rds")
 ```
 
 ```{r}
@@ -534,7 +534,7 @@ model_test_predictions <- predict(final_model, new_data = test, type = "class") 
 model_test_predictions
 ```
 
-##### Our model returned an roc_auc of 0.8571429 on our testing data, similar roc_auc(0.8621675) on our training data. This means my model did such a great job, not overfitting to the training data. 
+##### Our model returned an roc_auc of 0.8320896 on our testing data, similar roc_auc on our training data. This means my model did such a great job, not overfitting to the training data. 
 
 
 ##### Using the testing data, let's creat a confusion matrix and visualize it. 
@@ -545,7 +545,7 @@ augment(final_model, new_data = test) %>%
   autoplot(type = "heatmap")
 ```
 
-##### In the heat map, we know that correct classifications are always on the diagonal. The model correctly identified 157/239 'Yes'. for example. From the heat map, we can see that the model seems to distinguish 'survived' well. The model correctly identified 157/239 'Yes', and 377/384. The model is great at identifying 'Yes'.
+##### In the heat map, we know that correct classifications are always on the diagonal. From the heat map, we can see that the model seems to distinguish 'survived' well. The model correctly identified 69/103 'Yes', and 154/165 'No'. The model is great at identifying 'No'.
 
 
 
@@ -563,9 +563,9 @@ augment(final_model, new_data = test) %>%
 # Conclusion
 
 
-###### This project's goal was to generate several machine learning models that will predict which passengers would survive the Titanic shipwreck, and choose the best model. So we run Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model. 
+##### This project's goal was to generate several machine learning models that will predict which passengers would survive the Titanic shipwreck, and choose the best model. So we run Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model. 
 #####  By EDA, we could know that 'pclass', 'sex', 'age', 'sib_sp', 'parch', 'fare' variables are important to predict the outcome variable 'survived'. So, we made a recipe for predicting 'survived' using 'pclass','sex','age','sib_sp','parch','fare' variables.
-#####  After run several models, we compared the 'roc_auc' of each best-performing model on the folds of Decision, Random Forest, Boosted Tree, and Nearest Neighbor model. After comparing various models, we ultimately decided to go with a random forest model. The 'roc_auc' of our best-performing random forest on the folds was '0.8621675', with mtry=1, trees = 74, min_n = 10. This was the best performing model on the folds. The worst performing model was Decision Tree model in this project. The 'roc_auc' of our be st-performing pruned decision tree on the folds was '0.8436833'.
+#####  After run several models, we compared the 'roc_auc' of each best-performing model on the folds of Decision, Random Forest, Boosted Tree, and Nearest Neighbor model. After comparing various models, we ultimately decided to go with a random forest model. The 'roc_auc' of our best-performing random forest on the folds was '0.8625725', with mtry=1, trees = 100, min_n = 10. This was the best performing model on the folds. The worst performing model was Decision Tree model in this project. The 'roc_auc' of our best-performing pruned decision tree on the folds was '0.8294943'.
 #####  I expected the random forest model would be the best model in this project, because each trees were able to protect themselves from making correlations between variables that were not actually correlated. The result was as I expected. I expected the decision model would be the poorest performing model in this project, because the more complex the decision tree model becomes, the less predictive it becomes.
-#####  Finally, we fitted the best performing model to the testing data set. Our model returned an roc_auc of 0.8571429 on our testing data, similar roc_auc(0.8621675) on our training data. The model did such a great job.
+#####  Finally, we fitted the best performing model to the testing data set. Our model returned an roc_auc of 0.8320896 on our testing data, similar roc_auc on our training data. The model did such a great job.
 #####  Further research avenues may be creating a neural network model that will predict which passengers would survive the Titanic shipwreck, because we only created Decision model, Random Forest model, Boosted Tree model, and Nearest Neighbor model.
